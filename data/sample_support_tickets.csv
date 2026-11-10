@@ -1,0 +1,7 @@
+ticket_id,timestamp,user_role,order_id,raw_message,stakeholder_type,intent_category,sentiment,urgency_sla,recommended_action,suggested_reply,status
+OPS-5001,2026-11-10T18:10:00,Customer,ORD-99201,"Meu pedido está atrasado há mais de 50 minutos, o entregador está parado no mesmo quarteirão no mapa e o restaurante não atende!",,,,,,,PENDING
+OPS-5002,2026-11-10T18:14:00,Courier,ORD-99201,"Pneu da moto furou na Av. Agamenon Magalhães com o pedido ORD-99201 na bag. Preciso que realoquem outro entregador urgente, estou em local seguro.",,,,,,,PENDING
+OPS-5003,2026-11-10T18:18:00,Merchant,ORD-98110,"O repasse financeiro da quarta-feira veio com R$ 420,00 a menos do que consta no extrato de vendas do portal do parceiro. Solicito auditoria da taxa.",,,,,,,PENDING
+OPS-5004,2026-11-10T18:21:00,Customer,ORD-99305,O lacre de segurança veio rompido e faltou o refrigerante de 2L e uma batata grande. Quero estorno imediato dos itens faltantes.,,,,,,,PENDING
+OPS-5005,2026-11-10T18:25:00,Merchant,ORD-99400,Nosso gestor de pedidos está travando na tela de confirmação e não toca o alerta sonoro quando entra pedido novo. Já reiniciamos o PC.,,,,,,,PENDING
+OPS-5006,2026-11-10T18:29:00,Customer,ORD-99150,Só passando para elogiar o entregador Carlos! Chovendo muito em Recife e a pizza chegou super quente e intacta. Nota 10!,,,,,,,PENDING
