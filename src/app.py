@@ -138,15 +138,26 @@ Generate a crisp executive shift handover report structured strictly under these
 3. **Merchant & Technical Outliers**: Outline finance payout claims, POS bugs, or vendor pain points.
 4. **Immediate 30-Minute Action Items**: Three concrete directives for duty dispatchers.
 """
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt
-            )
-            
-            briefing_text = response.text
-            SHIFT_REPORT_MD_PATH.write_text(briefing_text, encoding="utf-8")
-            st.markdown(briefing_text)
-            st.success(f"Shift report successfully compiled and saved to `{SHIFT_REPORT_MD_PATH}`.")
+            candidate_models = ["gemini-3.0-flash", "gemini-3-flash-preview", "gemini-2.0-flash", GEMINI_MODEL]
+            response = None
+            last_err = None
+            for model_name in dict.fromkeys(candidate_models):
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt
+                    )
+                    break
+                except Exception as err:
+                    last_err = err
+
+            if response is None:
+                st.error(f"Failed to generate briefing across candidate models. Last error: {last_err}")
+            else:
+                briefing_text = response.text
+                SHIFT_REPORT_MD_PATH.write_text(briefing_text, encoding="utf-8")
+                st.markdown(briefing_text)
+                st.success(f"Shift report successfully compiled and saved to `{SHIFT_REPORT_MD_PATH}`.")
 
 elif SHIFT_REPORT_MD_PATH.exists():
     st.info("Displaying latest compiled shift briefing:")
