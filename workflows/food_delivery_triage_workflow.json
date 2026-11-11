@@ -1,0 +1,166 @@
+{
+  "name": "iFood Operations AI Triage & SLA Dispatcher",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual-node",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "iFood Ops - AI Triage Control"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "PENDING"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-read-pending",
+      "name": "Fetch Pending Tickets (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ticket ID: {{ $json.ticket_id }}\nOrder ID: {{ $json.order_id }}\nReported Role: {{ $json.user_role }}\nMessage: {{ $json.raw_message }}\n\nReturn ONLY a raw JSON object (without markdown backticks) with these exact 6 keys:\n{\n  \"stakeholder_type\": \"Customer | Merchant | Courier\",\n  \"intent_category\": \"Logistics & Delay | Order Quality & Refund | Merchant Payout & Finance | App & Technical Bug | Safety & Emergency | Positive Feedback\",\n  \"sentiment\": \"Negative | Neutral | Positive\",\n  \"urgency_sla\": \"CRITICAL (15m SLA) | HIGH (1h SLA) | NORMAL (24h SLA)\",\n  \"recommended_action\": \"Brief actionable internal dispatch instruction in English\",\n  \"suggested_reply\": \"Empathetic, polite reply in Portuguese tailored to the user\"\n}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an Autonomous Food Delivery Operations Triage Agent (iFood standard). Classify the incoming operational ticket strictly according to SLA rules: active delivery breakdowns with an order in transit or food safety breaches are CRITICAL (15m SLA). Severe delays (>45m) or POS outages are HIGH (1h SLA). Payout audits and compliments are NORMAL (24h SLA). Respond strictly with valid JSON."
+            }
+          ]
+        }
+      },
+      "id": "gemini-llm-chain",
+      "name": "AI Operations Triage Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "google-gemini-model",
+      "name": "Google Gemini Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [700, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.item.json.text || '';\nconst cleaned = rawText.replace(/```json|```/g, '').trim();\nconst parsed = JSON.parse(cleaned);\nconst originalTicket = $('Fetch Pending Tickets (Google Sheets)').item.json;\n\nreturn {\n  json: {\n    ticket_id: originalTicket.ticket_id,\n    stakeholder_type: parsed.stakeholder_type,\n    intent_category: parsed.intent_category,\n    sentiment: parsed.sentiment,\n    urgency_sla: parsed.urgency_sla,\n    recommended_action: parsed.recommended_action,\n    suggested_reply: parsed.suggested_reply,\n    status: 'TRIAGED_BY_AI'\n  }\n};"
+      },
+      "id": "parse-structured-json",
+      "name": "Parse & Validate JSON Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "iFood Ops - AI Triage Control"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": ["ticket_id"]
+        },
+        "options": {}
+      },
+      "id": "sheets-writeback-node",
+      "name": "Update Triage Results (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1260, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pending Tickets (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pending Tickets (Google Sheets)": {
+      "main": [
+        [
+          {
+            "node": "AI Operations Triage Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Operations Triage Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Operations Triage Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate JSON Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate JSON Contract": {
+      "main": [
+        [
+          {
+            "node": "Update Triage Results (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
